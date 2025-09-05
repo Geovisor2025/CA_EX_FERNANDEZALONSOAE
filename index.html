@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="./resources/ol.css">
+        <link rel="stylesheet" href="resources/fontawesome-all.min.css">
+        <link rel="stylesheet" type="text/css" href="resources/horsey.min.css">
+        <link rel="stylesheet" type="text/css" href="resources/ol-search-layer.min.css">
+        <link href="resources/photon-geocoder-autocomplete.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
+        <link rel="stylesheet" href="./resources/qgis2web.css">
+        <style>
+    html, body { background-color: #ffffff; }
+    .ol-control > * {
+      background-color: #f8f8f8!important;
+      color: #2300ff!important;
+      border-radius: 0px;
+    }
+    .ol-attribution a, .gcd-gl-input::placeholder, .search-layer-input-search::placeholder {
+      color: #2300ff!important;
+    }
+    .search-layer-input-search { background-color: #f8f8f8!important; }
+    .ol-control > *:focus, .ol-control >*:hover {
+      background-color: rgba(248, 248, 248, 0.7)!important;
+    }
+    .ol-control { background-color: rgba(255,255,255,.4) !important; padding: 2px !important; }
+
+    .opacity-control {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-80%);
+      background: #e0e0e0;
+      border-radius: 50px;
+      padding: 5px 30px;
+      z-index: 100000;
+      font-family: sans-serif;
+      font-size: 13px;
+      box-shadow: 1px 1px 1px #bebebe, -1px -1px 1px #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #header { width: 100%; height: 90.4px; overflow: hidden; }
+    #header-img { width: 100%; height: 100%; object-fit: cover; }
+
+    .top-left-buttons {
+      position: absolute;
+      bottom: 30px;
+      right: 10px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .top-left-buttons button {
+      font-size: 16px;
+      font-weight: 600;
+      padding: 6px 12px;
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, #006400, #ADFF2F);
+      color: white;
+      border-radius: 6px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    }
+    .top-left-buttons button:hover {
+      background: linear-gradient(135deg, #004d00, #cfff5f);
+    }
+
+    #soyStats {
+      position: absolute;
+      bottom: 60px;
+      left: 10px;
+      background: linear-gradient(135deg, #006400, #ADFF2F);
+      padding: 20px;
+      border-radius: 12px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 15px;
+      color: #ffffff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+      box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.25);
+      z-index: 1100;
+      min-width: 240px;
+      max-width: 300px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      display: none;
+      line-height: 1.6;
+    }
+
+    #soyStatsHeader {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      color: #ffffff !important;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: none !important;
+      -webkit-background-clip: initial !important;
+      -webkit-text-fill-color: initial !important;
+    }
+
+    #soyStats.visible { display: block; }
+
+    #toggleStatsBtn {
+      position: absolute;
+      bottom: 10px;
+      left: 20px;
+      z-index: 1200;
+      padding: 8px 14px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, #006400, #ADFF2F);
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+      transition: background 0.3s ease;
+    }
+
+    #toggleStatsBtn:hover {
+      background: linear-gradient(135deg, #004d00, #cfff5f);
+    }
+
+    #overlayImage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+      display: none;
+      background-color: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+    }
+    #overlayImage img {
+      max-width: 90%;
+      max-height: 90%;
+      border: 4px solid #fff;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    html, body, #map { width: 100%; height: 96.7%; padding: 0; margin: 0; }
+
+
+#soyStatsContent,
+#soyStatsContent strong {
+  color: #ffffff !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+  </style>
+ 
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header id="header">
+  <img src="images/carto.png" alt="Censo Agropecuario 2026" id="header-img">
+</header>
+
+<div id="map">
+  <div id="popup" class="ol-popup">
+    <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+    <div id="popup-content"></div>
+  </div>
+</div>
+
+<div class="opacity-control">
+  <label for="opacityRange">Transparencia de Coberturas</label>
+  <input type="range" id="opacityRange" min="0" max="1" step="0.1" value="1">
+</div>
+
+<div class="top-left-buttons">
+  <button id="toggleImageBtn">Mostrar Mapas Cartográficos</button>
+  <div id="buttonContainer" style="display: none; flex-direction: column;"></div>
+</div>
+
+<div id="overlayImage">
+  <img id="reportImage" src="" alt="Mapas Cartográficos" />
+</div>
+
+<button id="toggleStatsBtn">Ver Estadísticas</button>
+<div id="soyStats">
+  <div id="soyStatsHeader">Estadísticas - Área Cultivada / No Cultivada</div>
+  <hr style="margin: 8px 0; border-top: 1px solid #ccc;">
+  <div id="soyStatsContent">Cargando...</div>
+  <canvas id="soyChart" width="250" height="250" style="margin-top: 10px;"></canvas>
+</div>
+        <script src="resources/qgis2web_expressions.js"></script>
+        <script src="./resources/functions.js"></script>
+        <script src="./resources/ol.js"></script>
+        <script src="resources/horsey.min.js"></script>
+        <script src="resources/ol-search-layer.js"></script>
+        <script src="./resources/ol-layerswitcher.js"></script>
+        <script src="resources/photon-geocoder-autocomplete.min.js"></script>
+        <script src="layers/AE_16_1.js"></script><script src="layers/AE_15_2.js"></script><script src="layers/AE_14_3.js"></script><script src="layers/AE_13_4.js"></script><script src="layers/AE_12_5.js"></script><script src="layers/AE_11_6.js"></script><script src="layers/AE_10_7.js"></script><script src="layers/AE_09_8.js"></script><script src="layers/AE_08_9.js"></script><script src="layers/AE_07_10.js"></script><script src="layers/AE_06_11.js"></script><script src="layers/AE_05_12.js"></script><script src="layers/AE_04_13.js"></script><script src="layers/AE_03_14.js"></script><script src="layers/AE_02_15.js"></script><script src="layers/AE_01_16.js"></script><script src="layers/COMUNIDADES_17.js"></script><script src="layers/PERIMETROSAEs_18.js"></script><script src="layers/CENTROSPOBLADOS_19.js"></script>
+        <script src="styles/AE_16_1_style.js"></script><script src="styles/AE_15_2_style.js"></script><script src="styles/AE_14_3_style.js"></script><script src="styles/AE_13_4_style.js"></script><script src="styles/AE_12_5_style.js"></script><script src="styles/AE_11_6_style.js"></script><script src="styles/AE_10_7_style.js"></script><script src="styles/AE_09_8_style.js"></script><script src="styles/AE_08_9_style.js"></script><script src="styles/AE_07_10_style.js"></script><script src="styles/AE_06_11_style.js"></script><script src="styles/AE_05_12_style.js"></script><script src="styles/AE_04_13_style.js"></script><script src="styles/AE_03_14_style.js"></script><script src="styles/AE_02_15_style.js"></script><script src="styles/AE_01_16_style.js"></script><script src="styles/COMUNIDADES_17_style.js"></script><script src="styles/PERIMETROSAEs_18_style.js"></script><script src="styles/CENTROSPOBLADOS_19_style.js"></script>
+
+
+        
+<script src="./layers/layers.js" type="text/javascript"></script>
+<script>
+  window.layerList = [
+    lyr_AE_16_1, lyr_AE_15_2, lyr_AE_14_3, lyr_AE_13_4, lyr_AE_12_5,
+    lyr_AE_11_6, lyr_AE_10_7, lyr_AE_09_8, lyr_AE_08_9, lyr_AE_07_10,
+    lyr_AE_06_11, lyr_AE_05_12, lyr_AE_04_13, lyr_AE_03_14, lyr_AE_02_15,
+    lyr_AE_01_16
+  ];
+</script>
+
+<script src="./resources/Autolinker.min.js"></script>
+<script src="./resources/qgis2web.js"></script>
+
+<script>
+  const opacitySlider = document.getElementById('opacityRange');
+  const layersToControl = [
+    lyr_AE_16_1, lyr_AE_15_2, lyr_AE_14_3, lyr_AE_13_4, lyr_AE_12_5,
+    lyr_AE_11_6, lyr_AE_10_7, lyr_AE_09_8, lyr_AE_08_9, lyr_AE_07_10,
+    lyr_AE_06_11, lyr_AE_05_12, lyr_AE_04_13, lyr_AE_03_14, lyr_AE_02_15,
+    lyr_AE_01_16
+  ];
+  opacitySlider.addEventListener('input', function () {
+    const value = parseFloat(this.value);
+    layersToControl.forEach(layer => layer.setOpacity(value));
+  });
+
+  const toggleBtn = document.getElementById('toggleImageBtn');
+  const buttonContainer = document.getElementById('buttonContainer');
+  const overlayImage = document.getElementById('overlayImage');
+  const reportImage = document.getElementById('reportImage');
+
+  const imageData = [
+    { path: 'images/1.png', name: 'Clasificación Área Cultivada / No Cultivada Municipal' },
+    { path: 'images/2.png', name: 'Clasificación Área Cultivada / No Cultivada Comunal' }
+  ];
+
+  imageData.forEach(item => {
+    const btn = document.createElement('button');
+    btn.textContent = item.name;
+    btn.onclick = () => {
+      reportImage.src = item.path;
+      overlayImage.style.display = 'flex';
+      buttonContainer.style.display = 'none';
+      toggleBtn.textContent = 'Mostrar Mapas Cartográficos';
+    };
+    buttonContainer.appendChild(btn);
+  });
+
+  toggleBtn.onclick = () => {
+    const visible = buttonContainer.style.display !== 'none';
+    buttonContainer.style.display = visible ? 'none' : 'flex';
+    toggleBtn.textContent = visible ? 'Mostrar Mapas Cartográficos' : 'Ocultar Mapas Cartográficos';
+  };
+
+  overlayImage.onclick = (e) => { if (e.target === overlayImage) overlayImage.style.display = 'none'; };
+
+  window.onload = () => {
+    const toggleStatsBtn = document.getElementById('toggleStatsBtn');
+    const soyStatsPanel = document.getElementById('soyStats');
+
+    toggleStatsBtn.addEventListener('click', () => {
+      soyStatsPanel.classList.toggle('visible');
+      toggleStatsBtn.textContent = soyStatsPanel.classList.contains('visible')
+        ? 'Ocultar Estadísticas'
+        : 'Ver Estadísticas';
+      if (soyStatsPanel.classList.contains('visible')) calcularTotalesSoya();
+    });
+
+    function calcularTotalesSoya() {
+      let areaCultivada = 0, areaNoCultivada = 0;
+      window.layerList.forEach(layer => {
+        if (!layer.getVisible()) return;
+        const features = layer.getSource().getFeatures();
+        const extent = map.getView().calculateExtent(map.getSize());
+        features.forEach(f => {
+          if (!f.getGeometry().intersectsExtent(extent)) return;
+          const cultivo = f.get('cultivo')?.trim()?.toUpperCase();
+          const area = parseFloat(f.get('area_ha'));
+          if (isNaN(area)) return;
+          if (cultivo === 'AREA CULTIVADA') areaCultivada += area;
+          else if (cultivo === 'AREA NO CULTIVADA') areaNoCultivada += area;
+        });
+      });
+
+      const totalArea = areaCultivada + areaNoCultivada;
+      const porcCultivada = totalArea > 0 ? (areaCultivada / totalArea) * 100 : 0;
+      const porcNoCultivada = totalArea > 0 ? (areaNoCultivada / totalArea) * 100 : 0;
+
+      document.getElementById('soyStatsContent').innerHTML = `
+        <strong>Área Total Visible:</strong> ${totalArea.toFixed(2)} ha<br>
+        <strong>Área Cultivada:</strong> ${areaCultivada.toFixed(2)} ha (${porcCultivada.toFixed(1)}%)<br>
+        <strong>Área No Cultivada:</strong> ${areaNoCultivada.toFixed(2)} ha (${porcNoCultivada.toFixed(1)}%)<br>
+      `;
+
+      if (window.soyaChart) window.soyaChart.destroy();
+      const ctx = document.getElementById('soyChart').getContext('2d');
+window.soyaChart = new Chart(ctx, {
+  type: 'pie',
+  data: {
+    labels: ['Área Cultivada', 'Área No Cultivada'],
+    datasets: [
+      {
+        data: [areaCultivada, areaNoCultivada],
+        backgroundColor: ['#ffd901', '#00bc35']
+      }
+    ]
+  },
+  options: {
+    responsive: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: '#ffffff', // 👈 leyenda en blanco
+          font: {
+            size: 14,
+            family: "'Segoe UI', sans-serif"
+          }
+        }
+      }
+    }
+  }
+});
+    }
+
+    map.on('moveend', () => { if (soyStatsPanel.classList.contains('visible')) calcularTotalesSoya(); });
+    window.layerList.forEach(layer => layer.on('change:visible', () => { if (soyStatsPanel.classList.contains('visible')) calcularTotalesSoya(); }));
+  };
+</script>
+
+</body>
+</html>
